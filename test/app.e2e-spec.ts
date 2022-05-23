@@ -5,6 +5,8 @@ import { AppModule } from '../src/app.module';
 import * as pactum from 'pactum';
 import { AuthDTO } from '../src/auth/dto';
 import { EditUserDTO } from '../src/user/dto';
+import { CreateBookmarkDTO } from 'src/bookmark/dto/create-bookmark.dto';
+import { UpdateBookmarkDTO } from 'src/bookmark/dto';
 
 describe('App e2e', () => {
   let app: INestApplication;
@@ -122,10 +124,91 @@ describe('App e2e', () => {
   });
 
   describe('Bookmark', () => {
-    describe('getBookmarks', () => {});
-    describe('create Bookmark', () => {});
-    describe('get Bookmark by id', () => {});
-    describe('edit bookmark by id', () => {});
-    describe('delete bookmark by id', () => {});
+    describe('create Bookmark', () => {
+      it('should create a new bookmark', () => {
+        const dto: CreateBookmarkDTO = {
+          link: 'https://www.google.com',
+          title: 'Google',
+          description: 'Search engine',
+          userId: 1,
+        };
+        return pactum
+          .spec()
+          .post('/bookmarks')
+          .withHeaders({ Authorization: `Bearer $S{userAT}` })
+          .withBody(dto)
+          .expectStatus(201)
+          .expectBodyContains(dto.link)
+          .expectBodyContains(dto.title)
+          .expectBodyContains(dto.description)
+          .stores('bookmarkId', 'id');
+      });
+    });
+
+    describe('getBookmarks', () => {
+      it('should get all bookmarks', () => {
+        return pactum
+          .spec()
+          .get('/bookmarks')
+          .withHeaders({ Authorization: `Bearer $S{userAT}` })
+          .expectStatus(200)
+          .expectJsonLength(1);
+        // .inspect();
+      });
+    });
+
+    describe('get Bookmark by id', () => {
+      it('should get all bookmarks', () => {
+        return pactum
+          .spec()
+          .get(`/bookmarks/{id}`)
+          .withPathParams('id', `$S{bookmarkId}`)
+          .withHeaders({ Authorization: `Bearer $S{userAT}` })
+          .expectStatus(200)
+          .expectBodyContains('$S{bookmarkId}')
+          .inspect();
+      });
+    });
+    describe('edit bookmark by id', () => {
+      it('should edit bookmark', () => {
+        const dto: UpdateBookmarkDTO = {
+          link: 'https://www.google.com/search?q=pactum',
+          title: 'Updated Google',
+          description: 'Updated Search engine',
+        };
+
+        return pactum
+          .spec()
+          .patch(`/bookmarks/{id}`)
+          .withHeaders({ Authorization: `Bearer $S{userAT}` })
+          .withPathParams('id', `$S{bookmarkId}`)
+          .withBody(dto)
+          .expectStatus(200)
+          .expectBodyContains(dto.link)
+          .expectBodyContains(dto.title)
+          .expectBodyContains(dto.description);
+      });
+    });
+    describe('delete bookmark by id', () => {
+      it('should delete bookmark', () => {
+        return pactum
+          .spec()
+          .delete(`/bookmarks/{id}`)
+          .withHeaders({ Authorization: `Bearer $S{userAT}` })
+          .withPathParams('id', `$S{bookmarkId}`)
+          .expectStatus(204)
+          // .inspect();
+      });
+
+      it('should get empty bookmarks', () => {
+        return pactum
+          .spec()
+          .get('/bookmarks')
+          .withHeaders({ Authorization: `Bearer $S{userAT}` })
+          .expectStatus(200)
+          .expectJsonLength(0);
+        // .inspect();
+      });
+    });
   });
 });
